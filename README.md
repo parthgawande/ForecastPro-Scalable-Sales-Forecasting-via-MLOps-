@@ -1,85 +1,119 @@
-<h1 align="center"> Sales Forecast MLOps at Scale </h1>
+<h1 align="center">📊 ForecastPro: Scalable Sales Forecasting via MLOps 🚀</h1>
 
-<p align="center"><b> ▶️ Highly scalable Cloud-native Machine Learning system ◀️ </b></p>
+<p align="center"><strong>Production-grade, cloud-native MLOps system for time series forecasting at scale.</strong></p>
 
-# Table of contents
-- [Overview](#overview)
-- [Key Features](#key-features)
-- [Tools / Technologies](#tools--technologies)
-- [Development environment](#development-environment)
-- [How things work](#how-things-work)
-- [How to setup](#how-to-setup)
-  - [With Docker Compose](#with-docker-compose)
-  - [With Kubernetes/Helm (Local cluster)](#with-kuberneteshelm-local-cluster)
-  - [With Kubernetes/Helm (on GCP)](#with-kuberneteshelm-on-gcp)
-  - [Cleanup steps](#cleanup-steps)
-  - [Important note on MLflow on Cloud](#important-note-on-mlflow-on-cloud)
-- [References / Useful resources](#references--useful-resources)
-- [My notes](#my-notes)
+---
 
+## 📚 Table of Contents
 
-# Overview
-**"Sales Forecast MLOps at Scale"** delivers a full-stack, production-ready solution designed to streamline the entire sales forecasting system – from development and deployment to continuous improvement. It offers flexible deployment options, supporting both on-premises environments (Docker Compose, Kubernetes) and cloud-based setups (Kubernetes, Helm), ensuring adaptability to your infrastructure.
+- [🔍 Overview](#-overview)
+- [✨ Key Features](#-key-features)
+- [🛠️ Tools & Technologies](#-tools--technologies)
+- [⚙️ Development Environment](#️-development-environment)
+- [📈 How It Works](#-how-it-works)
+- [🚀 Setup Instructions](#-setup-instructions)
+  - [🔧 Docker Compose Setup](#-docker-compose-setup)
+  - [☸️ Kubernetes & Helm (Local)](#️-kubernetes--helm-local)
+  - [☁️ Kubernetes & Helm (GCP)](#️-kubernetes--helm-gcp)
+- [🧹 Cleanup Commands](#-cleanup-commands)
+- [📦 MLflow Cloud Config](#-mlflow-cloud-config)
+- [📚 References & Resources](#-references--resources)
+- [📝 Developer Notes](#-developer-notes)
+- [🙋‍♂️ Maintainer](#️-maintainer)
+- [⭐ Support](#-support)
 
-Demo on YouTube: https://youtu.be/PwV8TIsMEME
+---
 
-<image src="./files/sfmlops_software_diagram.png">
+## 🔍 Overview
 
-# Key Features
-- **Dual-Mode Inference**: Supports both batch and online inference modes, providing adaptability to various use cases and real-time prediction needs.
-- **Automated Forecast Generation**: Airflow DAGs orchestrate weekly model training and batch predictions, with the ability for on-demand retraining based on the latest data.
-- **Data-Driven Adaptability**: Kafka handles real-time data streaming, enabling the system to incorporate the latest sales information into predictions. Models are retrained on demand to maintain accuracy.
-- **Scalable Pipeline and Training**: Leverages Spark and Ray for efficient data processing and distributed model training, ensuring the system can handle large-scale datasets and training.
-- **Transparent Monitoring**: Ray and Grafana provide visibility into training performance, while Prometheus enables system-wide monitoring.
-- **User-Friendly Interface**: Streamlit offers a clear view of predictions. MLflow tracks experiments and model versions, ensuring reproducibility and streamlined updates.
-- **Best-Practices Serving**: Robust serving stack with Nginx, Gunicorn, and FastAPI for reliable and performant model deployment.
-- **CI/CD Automation**: GitHub Actions streamline the build and deployment process, automatically pushing images to Docker Hub and GCP.
-- **Cloud-native, Scalability and Flexibility**: Kubernetes and Google Cloud Platform ensure adaptability to growing data and workloads. The open-source foundation (Docker, Ray, FastAPI, etc.) offers customization and extensibility.
+**ForecastPro** is a scalable, cloud-native MLOps platform for sales forecasting. Built on modern data and ML infrastructure, it automates ingestion, training, deployment, and monitoring across real-time and batch pipelines.
 
-# Tools / Technologies
-Note: Most of the service ports can be found and customized in the `.env` file at the root of this repository (or `values.yaml` and `sfmlops-helm/templates/global-configmap.yaml` for Kubernetes and Helm).
-- Platform: [Docker](https://www.docker.com/), [Kubernetes](https://kubernetes.io/), [Helm](https://helm.sh/)
-- Cloud platform: [Google Cloud Platform](https://cloud.google.com/)
-- Experiment tracking / Model registry: [MLflow](https://mlflow.org/)
-- Pipeline orchestrator: [Airflow](https://airflow.apache.org/)
-- Model distributed training and scaling: [Ray](https://www.ray.io/)
-- Reverse proxy: [Nginx](https://www.nginx.com/) and [ingress-nginx](https://github.com/kubernetes/ingress-nginx) (for Kubernetes)
-- Web Interface: [Streamlit](https://streamlit.io/)
-- Machine Learning service deployment: [FastAPI](https://fastapi.tiangolo.com/), [Uvicorn](https://www.uvicorn.org/), [Gunicorn](https://gunicorn.org/)
-- Databases: [PostgreSQL](https://www.postgresql.org/), [Prometheus](https://prometheus.io/)
-- Database UI for Postgres: [pgAdmin](https://www.pgadmin.org/)
-- Overall system monitoring & dashboard: [Grafana](https://grafana.com/)
-- Distributed data streaming: [Kafka](https://kafka.apache.org/)
-- Forecast modeling framework: [Prophet](https://facebook.github.io/prophet/docs/quick_start.html)
-- Stream processing: [Spark Streaming](https://spark.apache.org/streaming/)
-- CICD: [GitHub Actions](https://github.com/features/actions)
+🎥 **Demo**: [YouTube](https://youtu.be/PwV8TIsMEME)  
+📦 **Dataset**: [Rossmann Sales Dataset](https://www.kaggle.com/datasets/pratyushakar/rossmann-store-sales)
 
-# Development environment
-1. Docker (ref: Docker version 24.0.6, build ed223bc)
-2. Kubernetes (ref: v1.27.2 (via Docker Desktop))
-3. Helm (ref: v3.14.3)
+![System Diagram](./files/sfmlops_software_diagram.png)
 
-# How things work
-1. After you start up the system, the **data producer** will read and store the data of the last 5 months from `services/data-producer/datasets/rossman-store-sales/train_exclude_last_10d.csv` to **Postgres**. It does this by modifying the last date of the data to be *YESTERDAY*. Afterward, it will keep publishing new messages (from `train_only_last_19d.csv` in the same directory), technically *TODAY* data, to a **Kafka** topic every 10 seconds (infinite loop).
-2. There are two main DAGs in **Airflow**:
-   1. Daily DAG:  
-       \>\> Ingest data from this Kafka topic  
-       \>\> Process and transform with **Spark Streaming**  
-       \>\> Store it in Postgres  
-   2. Weekly DAG:  
-       \>\> Pull the last four months of sales data from Postgres  
-       \>\> Use it for training new **Prophet** models, with **Ray** (*1,1115* models in total), which are tracked and registered by **MLflow**  
-       \>\> Use these newly trained models to predict the forecast of the upcoming week (next 7 days)  
-       \>\> Store the forecasts in Postgres (another table)
-3. During training, you can monitor your system and infrastructure with **Grafana** and **Prometheus**.
-4. By default, the data stream from topic `sale_rossman_store` gets stored in `rossman_sales` table and forecast results in `forecast_results` table, you can use **pgAdmin** to access it.
-5. After the previous steps are executed successfully, you/users can now access the **Streamlit** website proxied by **Nginx**.
-6. This website fetches the latest 7 predictions (technically, the next 7 days) for each store and each product and displays them in a good-looking line chart (thanks to **Altair**)
-7. From the website, users can view sales forecast of any product from any store. Notice that the subtitle of the chart contains the model ID and version.
-8. Since these forecasts are made weekly, whether users access this website on Monday or Wednesday, they will see the same chart. If, during the week, the users somehow feel like the forecast prediction is out of sync or outdated, they can trigger retraining for a specific model of that product and store.
-9.  When the users click a retrain button, the website will submit a model training job to the **training service** which then calls Ray to retrain this model. The retraining is pretty fast, usually done in under a minute, and it follows the same training strategy as the weekly training DAG (but of course, with the newest data possible).
-10. Right after retraining is done, users can select a number of future days to predict and click a forecast button to request the **forecasting service** to use the latest model to make forecasts.
-11. The result of new forecasts is then displayed in the line chart below. Notice that the model version number increased! Yoohoo! (note: For simplicity, this new forecast result won't be stored anywhere.)
+---
+
+## ✨ Key Features
+
+- ✅ Batch + real-time forecasting
+- ⏱ Weekly auto-retraining using Airflow + Ray
+- 🔁 Kafka stream for real-time updates
+- ⚙️ Spark Streaming pipeline
+- 🧠 MLflow experiment tracking
+- 📈 Grafana + Prometheus dashboards
+- 🖥️ Streamlit frontend with retrain buttons
+- ☁️ Deployable via Docker, Kubernetes, Helm
+- 🔄 GitHub Actions for CI/CD pipelines
+
+---
+
+## 🛠️ Tools & Technologies
+
+| Layer             | Stack Components                                                                 |
+|-------------------|-----------------------------------------------------------------------------------|
+| Orchestration     | Apache Airflow, Spark Streaming                                                   |
+| Model Training    | Prophet, Ray, MLflow                                                              |
+| Streaming         | Apache Kafka                                                                      |
+| Monitoring        | Prometheus, Grafana                                                               |
+| Deployment        | FastAPI, Gunicorn, Uvicorn, Nginx                                                 |
+| Data Storage      | PostgreSQL, pgAdmin                                                               |
+| CI/CD             | GitHub Actions                                                                    |
+| Cloud Infrastructure | Google Cloud Platform, Helm, Kubernetes                                       |
+| Interface         | Streamlit                                                                         |
+
+---
+
+## ⚙️ Development Environment
+
+| Tool         | Version              |
+|--------------|----------------------|
+| Docker       | 24.0.6               |
+| Kubernetes   | v1.27.2 (Docker Desktop) |
+| Helm         | v3.14.3              |
+
+---
+
+## 📈 How It Works
+
+1. **Kafka producer** simulates new sales every 10 seconds.
+2. **Airflow Daily DAG** consumes this → Spark cleans → inserts into Postgres.
+3. **Airflow Weekly DAG**:
+   - Pulls 4-month history
+   - Trains 1,000+ Prophet models using Ray
+   - Registers models in MLflow
+   - Stores forecasts in Postgres
+4. **Streamlit UI**:
+   - Shows 7-day sales forecast
+   - Allows one-click retraining
+5. **Prometheus & Grafana** track pipeline and training metrics.
+6. **MLflow UI** logs experiments with version control.
+
+---
+
+## 🚀 Setup Instructions
+
+### 🔧 Docker Compose Setup
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/parthgawande/ForecastPro-Scalable-Sales-Forecasting-via-MLOps-.git
+cd ForecastPro-Scalable-Sales-Forecasting-via-MLOps-
+
+# 2. (Optional) Build images locally
+docker-compose build
+
+# 3. Start the full pipeline
+docker-compose -f docker-compose.yml -f docker-compose-airflow.yml up -d
+
+# 4. Access services:
+#    - Streamlit: http://localhost:8501
+#    - Airflow: http://localhost:8080
+#    - MLflow: http://localhost:5000
+#    - Grafana: http://localhost:3000
+#    - pgAdmin: http://localhost:5050
+
 
 # How to setup
 Prerequisites: Docker, Kubernetes, and Helm
