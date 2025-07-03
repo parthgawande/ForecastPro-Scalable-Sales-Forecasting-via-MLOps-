@@ -225,3 +225,7 @@ In this setting, I set the MLflow's artifact path to point to a local path. Inte
 - dataset: https://www.kaggle.com/datasets/pratyushakar/rossmann-store-sales
 - Original Airflow's docker-compose file: https://airflow.apache.org/docs/apache-airflow/2.8.3/docker-compose.yaml
 
+## 👨‍💻 Author & Credits
+
+Adapted by [**Parth Gawande**](https://github.com/parthgawande)  
+Originally inspired by [Ariya Sontrapornpol](https://github.com/jomariya23156)
