@@ -28,7 +28,6 @@
 
 **ForecastPro** is a scalable, cloud-native MLOps platform for sales forecasting. Built on modern data and ML infrastructure, it automates ingestion, training, deployment, and monitoring across real-time and batch pipelines.
 
-🎥 **Demo**: [YouTube](https://youtu.be/PwV8TIsMEME)  
 📦 **Dataset**: [Rossmann Sales Dataset](https://www.kaggle.com/datasets/pratyushakar/rossmann-store-sales)
 
 ![System Diagram](./files/sfmlops_software_diagram.png)
@@ -226,5 +225,3 @@ In this setting, I set the MLflow's artifact path to point to a local path. Inte
 - dataset: https://www.kaggle.com/datasets/pratyushakar/rossmann-store-sales
 - Original Airflow's docker-compose file: https://airflow.apache.org/docs/apache-airflow/2.8.3/docker-compose.yaml
 
-# My notes
-If you have any comments, questions, or want to learn more, check out `notes/README.md`. I have included a lot of useful notes about how and why I made certain choices during development. Mostly, they cover tool selection, design choices, and some caveats.
